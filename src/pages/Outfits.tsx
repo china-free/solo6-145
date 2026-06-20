@@ -86,6 +86,15 @@ export const Outfits: React.FC = () => {
             <CalendarIcon className="w-5 h-5 text-rose-brown-500" />
             <h3 className="font-semibold text-gray-800">今日穿搭</h3>
           </div>
+          {todayOutfit.photoUrl && (
+            <div className="mb-4">
+              <img
+                src={`http://localhost:3001${todayOutfit.photoUrl}`}
+                alt="今日穿搭"
+                className="w-full max-h-80 object-cover rounded-xl"
+              />
+            </div>
+          )}
           <div className="flex flex-wrap gap-4">
             {todayOutfit.clothes.map((clothing) => (
               <div
@@ -152,16 +161,24 @@ export const Outfits: React.FC = () => {
                     className="w-full text-left p-3 rounded-xl hover:bg-cream-50 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex -space-x-2">
-                        {outfit.clothes.slice(0, 3).map((clothing) => (
-                          <img
-                            key={clothing.id}
-                            src={`http://localhost:3001${clothing.imageUrl}`}
-                            alt=""
-                            className="w-10 h-10 rounded-lg object-cover border-2 border-white shadow-sm"
-                          />
-                        ))}
-                      </div>
+                      {outfit.photoUrl ? (
+                        <img
+                          src={`http://localhost:3001${outfit.photoUrl}`}
+                          alt=""
+                          className="w-14 h-14 rounded-lg object-cover border-2 border-white shadow-sm"
+                        />
+                      ) : (
+                        <div className="flex -space-x-2">
+                          {outfit.clothes.slice(0, 3).map((clothing) => (
+                            <img
+                              key={clothing.id}
+                              src={`http://localhost:3001${clothing.imageUrl}`}
+                              alt=""
+                              className="w-10 h-10 rounded-lg object-cover border-2 border-white shadow-sm"
+                            />
+                          ))}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-800 truncate">
                           {outfit.occasion}
@@ -209,6 +226,16 @@ export const Outfits: React.FC = () => {
               </div>
               <span className="tag tag-active">{showDetailModal.occasion}</span>
             </div>
+
+            {showDetailModal.photoUrl && (
+              <div className="rounded-xl overflow-hidden">
+                <img
+                  src={`http://localhost:3001${showDetailModal.photoUrl}`}
+                  alt="穿搭照片"
+                  className="w-full max-h-96 object-cover"
+                />
+              </div>
+            )}
 
             {showDetailModal.note && (
               <div className="p-4 bg-cream-50 rounded-xl">

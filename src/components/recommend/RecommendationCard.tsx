@@ -22,12 +22,13 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
     
     setSaving(true);
     try {
-      await addOutfit({
-        clothingIds: recommendation.clothes.map((c) => c.id),
-        date: new Date().toISOString().split('T')[0],
-        occasion: '日常',
-        note: recommendation.reason,
-      });
+      const formData = new FormData();
+      formData.append('clothingIds', JSON.stringify(recommendation.clothes.map((c) => c.id)));
+      formData.append('date', new Date().toISOString().split('T')[0]);
+      formData.append('occasion', '日常');
+      formData.append('note', recommendation.reason);
+      
+      await addOutfit(formData);
       onSave?.();
     } finally {
       setSaving(false);

@@ -135,18 +135,28 @@ export const Calendar: React.FC<CalendarProps> = ({
               <span className={selected ? 'text-white' : today ? 'text-rose-brown-600' : ''}>
                 {day}
               </span>
-              {outfit && outfit.clothes.length > 0 && (
-                <div className="flex -space-x-1 mt-1">
-                  {outfit.clothes.slice(0, 3).map((clothing, i) => (
+              {outfit && (
+                outfit.photoUrl ? (
+                  <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                     <img
-                      key={clothing.id}
-                      src={`http://localhost:3001${clothing.imageUrl}`}
+                      src={`http://localhost:3001${outfit.photoUrl}`}
                       alt=""
-                      className="w-6 h-6 rounded-full border-2 border-white object-cover"
-                      style={{ zIndex: 3 - i }}
+                      className="w-10 h-10 rounded-lg border-2 border-white object-cover shadow-sm"
                     />
-                  ))}
-                </div>
+                  </div>
+                ) : outfit.clothes.length > 0 ? (
+                  <div className="flex -space-x-1 mt-1">
+                    {outfit.clothes.slice(0, 3).map((clothing, i) => (
+                      <img
+                        key={clothing.id}
+                        src={`http://localhost:3001${clothing.imageUrl}`}
+                        alt=""
+                        className="w-6 h-6 rounded-full border-2 border-white object-cover"
+                        style={{ zIndex: 3 - i }}
+                      />
+                    ))}
+                  </div>
+                ) : null
               )}
             </button>
           );

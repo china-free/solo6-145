@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Check, X } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Check, X, Camera, Upload, Image as ImageIcon } from 'lucide-react';
 import { Clothing, OCCASION_OPTIONS, CATEGORY_LABELS } from '../../../shared/types';
 import { useStore } from '../../store/useStore';
 import { ClothingCard } from '../wardrobe/ClothingCard';
@@ -23,6 +23,13 @@ export const CreateOutfitForm: React.FC<CreateOutfitFormProps> = ({
     note: '',
   });
   const [filterCategory, setFilterCategory] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadClothes = useCallback(() => {
     fetchClothes();
@@ -31,6 +38,77 @@ export const CreateOutfitForm: React.FC<CreateOutfitFormProps> = ({
   useEffect(() => {
     loadClothes();
   }, [loadClothes]);
+
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
+
+  const startCamera = async () => {
+    setShowCamera(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Camera error:', err);
+      setError('无法访问摄像头，请检查权限设置');
+      setShowCamera(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], `outfit-${Date.now()}.jpg`, {
+              type: 'image/jpeg' });
+            setPhotoFile(file);
+            setPhotoPreview(URL.createObjectURL(blob));
+          }
+        }, 'image/jpeg', 0.9);
+      }
+      stopCamera();
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const toggleClothing = (clothing: Clothing) => {
     setSelectedClothes((prev) => {
@@ -63,12 +141,18 @@ export const CreateOutfitForm: React.FC<CreateOutfitFormProps> = ({
       return;
     }
 
-    const result = await addOutfit({
-      clothingIds: selectedClothes.map((c) => c.id),
-      date: formData.date,
-      occasion: formData.occasion,
-      note: formData.note,
-    });
+    const formDataToSend = new FormData();
+    formDataToSend.append('clothingIds', JSON.stringify(selectedClothes.map((c) => c.id)));
+    formDataToSend.append('date', formData.date);
+    formDataToSend.append('occasion', formData.occasion);
+    if (formData.note) {
+      formDataToSend.append('note', formData.note);
+    }
+    if (photoFile) {
+      formDataToSend.append('photo', photoFile);
+    }
+
+    const result = await addOutfit(formDataToSend);
 
     if (result) {
       onSuccess?.();
@@ -90,6 +174,87 @@ export const CreateOutfitForm: React.FC<CreateOutfitFormProps> = ({
           {error}
         </div>
       )}
+
+      <div>
+        <label className="label">穿搭照片</label>
+        <div className="border-2 border-dashed border-cream-200 rounded-2xl p-6 text-center">
+          {showCamera ? (
+            <div className="relative">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full max-h-80 mx-auto rounded-xl"
+              />
+              <canvas ref={canvasRef} className="hidden" />
+              <div className="flex justify-center gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={capturePhoto}
+                  className="btn btn-primary"
+                >
+                  <Camera className="w-4 h-4" />
+                  拍照
+                </button>
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="btn btn-outline"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          ) : photoPreview ? (
+            <div className="relative">
+              <img
+                src={photoPreview}
+                alt="Preview"
+                className="w-full max-h-80 mx-auto rounded-xl object-cover"
+              />
+              <button
+                type="button"
+                onClick={removePhoto}
+                className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="w-16 h-16 bg-cream-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ImageIcon className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-500 mb-4">上传穿搭照片或使用相机拍照记录</p>
+              <div className="flex justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={startCamera}
+                  className="btn btn-outline"
+                >
+                  <Camera className="w-4 h-4" />
+                  拍照
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="btn btn-primary"
+                >
+                  <Upload className="w-4 h-4" />
+                  上传照片
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>

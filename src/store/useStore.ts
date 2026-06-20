@@ -31,7 +31,7 @@ interface AppState {
   
   fetchOutfits: (filter?: { date?: string; month?: string; year?: string }) => Promise<void>;
   
-  addOutfit: (data: { clothingIds: number[]; date: string; occasion: string; note?: string }) => Promise<OutfitWithClothes | null>;
+  addOutfit: (data: FormData) => Promise<OutfitWithClothes | null>;
   
   deleteOutfit: (id: number) => Promise<boolean>;
   

@@ -22,6 +22,7 @@ export interface Outfit {
   date: string;
   occasion: string;
   note?: string;
+  photoUrl?: string;
   createdAt: string;
 }
 

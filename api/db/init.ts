@@ -60,9 +60,16 @@ function createTables(db: Database): void {
       date TEXT NOT NULL,
       occasion TEXT NOT NULL,
       note TEXT,
+      photoUrl TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  try {
+    db.run('ALTER TABLE outfit ADD COLUMN photoUrl TEXT');
+  } catch {
+    // Column might already exist, ignore
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS outfit_clothing (

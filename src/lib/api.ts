@@ -92,10 +92,11 @@ export const outfitApi = {
   getById: (id: number) =>
     request<ApiResponse<OutfitWithClothes | null>>(`/outfits/${id}`),
 
-  create: (data: { clothingIds: number[]; date: string; occasion: string; note?: string }) =>
+  create: (data: FormData) =>
     request<ApiResponse<OutfitWithClothes | null>>('/outfits', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data,
+      headers: {},
     }),
 
   delete: (id: number) =>

@@ -9,6 +9,7 @@ function rowToOutfit(row: any): Outfit {
     date: row.date,
     occasion: row.occasion,
     note: row.note || undefined,
+    photoUrl: row.photoUrl || undefined,
     createdAt: row.createdAt,
   };
 }
@@ -89,17 +90,18 @@ export interface CreateOutfitData {
   date: string;
   occasion: string;
   note?: string;
+  photoUrl?: string;
 }
 
 export async function createOutfit(data: CreateOutfitData): Promise<OutfitWithClothes> {
   const db = getDatabase();
 
   const stmt = db.prepare(`
-    INSERT INTO outfit (date, occasion, note)
-    VALUES (?, ?, ?)
+    INSERT INTO outfit (date, occasion, note, photoUrl)
+    VALUES (?, ?, ?, ?)
   `);
 
-  const result = stmt.run([data.date, data.occasion, data.note || null]);
+  const result = stmt.run([data.date, data.occasion, data.note || null, data.photoUrl || null]);
   const outfitId = result.lastInsertRowid as number;
 
   const linkStmt = db.prepare(`
