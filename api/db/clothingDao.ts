@@ -12,7 +12,7 @@ function rowToClothing(row: any): Clothing {
     brand: row.brand,
     purchaseDate: row.purchaseDate,
     imageUrl: row.imageUrl,
-    wearCount: row.wearCount,
+    wearCount: row.wearCount ?? 0,
     createdAt: row.createdAt,
   };
 }
@@ -27,31 +27,36 @@ export interface ClothingFilter {
 
 export async function getClothes(filter: ClothingFilter = {}): Promise<Clothing[]> {
   const db = getDatabase();
-  let sql = 'SELECT * FROM clothing WHERE 1=1';
+  let sql = `
+    SELECT c.*, COUNT(oc.outfitId) AS wearCount
+    FROM clothing c
+    LEFT JOIN outfit_clothing oc ON c.id = oc.clothingId
+    WHERE 1=1
+  `;
   const params: any[] = [];
 
   if (filter.category) {
-    sql += ' AND category = ?';
+    sql += ' AND c.category = ?';
     params.push(filter.category);
   }
   if (filter.color) {
-    sql += ' AND color = ?';
+    sql += ' AND c.color = ?';
     params.push(filter.color);
   }
   if (filter.style) {
-    sql += ' AND style LIKE ?';
+    sql += ' AND c.style LIKE ?';
     params.push(`%${filter.style}%`);
   }
   if (filter.season) {
-    sql += ' AND season LIKE ?';
+    sql += ' AND c.season LIKE ?';
     params.push(`%${filter.season}%`);
   }
   if (filter.search) {
-    sql += ' AND (name LIKE ? OR brand LIKE ?)';
+    sql += ' AND (c.name LIKE ? OR c.brand LIKE ?)';
     params.push(`%${filter.search}%`, `%${filter.search}%`);
   }
 
-  sql += ' ORDER BY createdAt DESC';
+  sql += ' GROUP BY c.id ORDER BY c.createdAt DESC';
 
   const stmt = db.prepare(sql);
   const rows = stmt.getAsObject(params) as any[];
@@ -61,7 +66,14 @@ export async function getClothes(filter: ClothingFilter = {}): Promise<Clothing[
 
 export async function getClothingById(id: number): Promise<Clothing | null> {
   const db = getDatabase();
-  const stmt = db.prepare('SELECT * FROM clothing WHERE id = ?');
+  const sql = `
+    SELECT c.*, COUNT(oc.outfitId) AS wearCount
+    FROM clothing c
+    LEFT JOIN outfit_clothing oc ON c.id = oc.clothingId
+    WHERE c.id = ?
+    GROUP BY c.id
+  `;
+  const stmt = db.prepare(sql);
   const row = stmt.getAsObject([id]) as any;
   
   return row ? rowToClothing(row) : null;
@@ -159,20 +171,6 @@ export async function updateClothing(id: number, data: Partial<CreateClothingDat
   saveDatabase();
 
   return getClothingById(id);
-}
-
-export async function incrementWearCount(clothingId: number): Promise<void> {
-  const db = getDatabase();
-  const stmt = db.prepare('UPDATE clothing SET wearCount = wearCount + 1 WHERE id = ?');
-  stmt.run([clothingId]);
-  saveDatabase();
-}
-
-export async function decrementWearCount(clothingId: number): Promise<void> {
-  const db = getDatabase();
-  const stmt = db.prepare('UPDATE clothing SET wearCount = MAX(wearCount - 1, 0) WHERE id = ?');
-  stmt.run([clothingId]);
-  saveDatabase();
 }
 
 export async function deleteClothing(id: number): Promise<boolean> {

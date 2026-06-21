@@ -49,7 +49,6 @@ function createTables(db: Database): void {
       brand TEXT,
       purchaseDate TEXT,
       imageUrl TEXT NOT NULL,
-      wearCount INTEGER DEFAULT 0,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);

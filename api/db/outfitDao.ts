@@ -1,6 +1,6 @@
 import { getDatabase, saveDatabase } from './init';
 import { Outfit, OutfitWithClothes, Clothing } from '../../shared/types';
-import { getClothingById, incrementWearCount, decrementWearCount } from './clothingDao';
+import { getClothingById } from './clothingDao';
 
 function rowToOutfit(row: any): Outfit {
   return {
@@ -111,7 +111,6 @@ export async function createOutfit(data: CreateOutfitData): Promise<OutfitWithCl
 
   for (const clothingId of data.clothingIds) {
     linkStmt.run([outfitId, clothingId]);
-    await incrementWearCount(clothingId);
   }
 
   saveDatabase();
@@ -127,22 +126,10 @@ export async function createOutfit(data: CreateOutfitData): Promise<OutfitWithCl
 export async function deleteOutfit(id: number): Promise<boolean> {
   const db = getDatabase();
 
-  const clothesStmt = db.prepare('SELECT clothingId FROM outfit_clothing WHERE outfitId = ?');
-  const clothesRows = clothesStmt.getAsObject([id]) as any[];
-  const clothingIds = Array.isArray(clothesRows)
-    ? clothesRows.map((r) => r.clothingId as number)
-    : [];
-
   db.prepare('DELETE FROM outfit_clothing WHERE outfitId = ?').run([id]);
 
   const stmt = db.prepare('DELETE FROM outfit WHERE id = ?');
   const result = stmt.run([id]);
-
-  if ((result.changes ?? 0) > 0) {
-    for (const clothingId of clothingIds) {
-      await decrementWearCount(clothingId);
-    }
-  }
 
   saveDatabase();
 
