@@ -168,6 +168,13 @@ export async function incrementWearCount(clothingId: number): Promise<void> {
   saveDatabase();
 }
 
+export async function decrementWearCount(clothingId: number): Promise<void> {
+  const db = getDatabase();
+  const stmt = db.prepare('UPDATE clothing SET wearCount = MAX(wearCount - 1, 0) WHERE id = ?');
+  stmt.run([clothingId]);
+  saveDatabase();
+}
+
 export async function deleteClothing(id: number): Promise<boolean> {
   const db = getDatabase();
   
